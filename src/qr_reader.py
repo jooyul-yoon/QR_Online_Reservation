@@ -1,10 +1,11 @@
 from tkinter import *
 from datetime import datetime
 from PIL import Image, ImageTk
+from threading import Timer
 
 import time
 import sys
-import xlrd
+import openpyxl
 
 
 def add_label():
@@ -21,7 +22,7 @@ def add_label():
     start_frame.after(1000, add_label)
 
 
-# Ask which service now
+# Ask which service
 service_num = int(input("Which Service(1-3): "))
 while service_num <= 0 | service_num >= 4:
     print("Enter between 1 - 3.")
@@ -33,26 +34,26 @@ month_list = {1:"Jan ", 2:"Feb ", 3:"Mar ", 4:"Apr ", 5:"May ", 6:"Jun ",
 service_list = {1:" at 8:00 AM", 2:" at 10:30 AM", 3:" at 1:00 PM"}
 
 month = now.month
-date = str(15) # str(now.day)
+date = str(now.day)
 year = str(now.year)
 
 this_service = month_list[month] + date + ", " + year + service_list[service_num]  # Nov 13, 2020 at 10:30 AM
 print("Today's Service: " + this_service)
 
-loc  = ("report-2020-11-10T1105.xlsx")  # EventBrite List
-loc2 = ("11082020_list.xlsx")           # pastor/volunteer
+loc  = "data/report-2020-11-10T1105.xlsx"  # EventBrite List
+loc2 = ("data/11082020_list.xlsx")           # pastor/volunteer
 
 # input file prep
-wb = xlrd.open_workbook(loc)
-sheet = wb.sheet_by_index(0)
-
+wb = openpyxl.load_workbook(loc)
+sheet = wb.active
+#
 # format checking
-if sheet.cell_value(0, 10-1) != "Barcode #":
+if sheet['J1'].value != "Barcode #":
     print("ERROR: Barcode # is not on excel file")
     quit()
 
 # output file prep
-logfile = (now.strftime("%Y_%m_%d__%H_%M_%S")+".log")
+logfile = ("log/" + now.strftime("%Y_%m_%d__%H_%M_%S")+".log")
 f = open(logfile, "x", encoding='utf-8')  # create file for writing
 f.write(this_service + "\n")
 
@@ -65,26 +66,29 @@ entered_person = {
         "barcode#": "Time"
 }
 
-for i in range(sheet.nrows):
-    first_name  = sheet.cell_value(i,5-1)
-    last_name   = sheet.cell_value(i,6-1)
+for i in range(2, sheet.max_row + 1):
+    first_name  = sheet.cell(i, 5).value
+    last_name   = sheet.cell(i, 6).value
     name = first_name + " " + last_name
-    email = sheet.cell_value(i,7-1)
-    barcode_num = sheet.cell_value(i,10-1)
-    checkIn = sheet.cell_value(i, 11 - 1)
-    phone = sheet.cell_value(i,13-1)
+    email = sheet.cell(i,7).value
+    barcode_num = sheet.cell(i,10).value
+    checkIn = sheet.cell(i, 11).value
+    phone = sheet.cell(i,13).value
     attendee_list[barcode_num] = [name, email, phone, checkIn]
 
 # pastor/volunteer list loading
-wb = xlrd.open_workbook(loc2)
-sheet = wb.sheet_by_index(0)
+wb = openpyxl.load_workbook(loc2)
+pSheet = wb.active
 
 
-for i in range(sheet.nrows):
-    pName = sheet.cell_value(i,2-1)
-    barcode_num = sheet.cell_value(i,1-1)
-    pEmail = sheet.cell_value(i,3-1)
-    pPhone = sheet.cell_value(i,4-1)
+for i in range(2, pSheet.max_row + 1):
+    pName = pSheet.cell(i, 2).value
+    barcode_num = pSheet.cell(i, 1).value
+    pEmail = pSheet.cell(i, 3).value
+    if(pSheet.cell(i, 4).value != None):
+        pPhone = pSheet.cell(i, 4).value
+    else:
+        pPhone = ""
     pCheckin = this_service
     attendee_list[barcode_num] = [pName, pEmail, pPhone, pCheckin]
 
@@ -117,26 +121,29 @@ headerLabel = Label(image=photo)
 headerLabel.image = photo
 headerLabel.place(x=64, y=52)
 
-# start page frame
-start_frame = Frame(ROOT, padx=0, pady=0, highlightbackground='red', highlightthickness=0)
+# Body frame
+start_frame = Frame(ROOT, padx=0, pady=0, background='white', highlightbackground='red', highlightthickness=0)
 start_frame.pack()
 start_frame.place(x=550, y=221)
 qrLabel = Label(start_frame, image=qr_img, font="bold")
 qrLabel.pack()
 
-DELAY = 0
+body_frame = Frame(ROOT, padx=0, pady=51,background='white', highlightbackground='red', highlightthickness=0)
+body_frame.pack()
+body_frame.place(x=550, y=221)
+
 exit_loop = False
 while exit_loop == False:
     scan_num = input("Scan QR Code: ")
 
+    body_frame.destroy()
     if scan_num == "q":
         exit_loop = True
     else:
         # GUI
-        body_frame = Frame(ROOT, padx=0, pady=51, background='white',highlightbackground='red', highlightthickness=0)
+        body_frame = Frame(ROOT, padx=0, pady=51,background='white', highlightbackground='red', highlightthickness=0)
         body_frame.pack()
         body_frame.place(x=550, y=221)
-        countLabel = None
 
         if scan_num in attendee_list:
             now = datetime.now()
@@ -158,8 +165,6 @@ while exit_loop == False:
                 Label(body_frame, text=name, font=("Arial", 19), pady=16).pack()
                 Label(body_frame, text="Redeemed time: " + entered_person[scan_num], font=("Arial", 19)).pack()
                 Label(body_frame, text=" ", font='bold', pady=16).pack()
-                DELAY = 6
-                add_label()
 
             else:
                 ## RESERVATION TIME NOT MATCHED ##
@@ -172,8 +177,6 @@ while exit_loop == False:
                     Label(body_frame, text=name, font=("Arial", 19), pady=16).pack()
                     Label(body_frame, text="Reserved time: " + checkIn, font=("Arial", 19)).pack()
                     Label(body_frame, text=" ", font='bold', pady=16).pack()
-                    DELAY = 6
-                    add_label()
 
                 ## NEW SUCCESSFUL ENTRY PROCESSING ##
                 else:
@@ -185,8 +188,6 @@ while exit_loop == False:
                     Label(body_frame, text=name, font=("Arial", 19), pady=16).pack()
                     Label(body_frame, text="Redeemed time: " + now.strftime("%H:%M:%S"), font=("Arial", 19)).pack()
                     Label(body_frame, text=" ", font='bold', pady=16).pack()
-                    DELAY = 4
-                    add_label()
 
         ## CODE NOT EXIST ##
         else:
@@ -198,5 +199,3 @@ while exit_loop == False:
             Label(body_frame, text=" ", font='bold', pady=20).pack()
             Label(body_frame, text=" ", font='bold', pady=16).pack()
             Label(body_frame, text=" ", font='bold', pady=16).pack()
-            DELAY = 6
-            add_label()
