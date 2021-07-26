@@ -2,31 +2,43 @@ from tkinter import *
 from datetime import datetime
 from PIL import Image, ImageTk
 from threading import Timer
+import tkinter as tk
 
 import time
 import sys
 import openpyxl
 
+# def add_label():
+#     global DELAY
+#     global countLabel
+#     if DELAY == 0:
+#         body_frame.destroy()
+#     if DELAY == -1:
+#         return
+#     if countLabel:
+#         countLabel.pack_forget()
+#     # print("Foward:  " + str(DELAY) + "m")
+#     DELAY = DELAY - 1
+#     start_frame.after(1000, add_label)
+def show_label(self, event=None):
+		self.label.lift(self.frame)
 
-def add_label():
-    global DELAY
-    global countLabel
-    if DELAY == 0:
-        body_frame.destroy()
-    if DELAY == -1:
-        return
-    if countLabel:
-        countLabel.pack_forget()
-    # print("Foward:  " + str(DELAY) + "m")
-    DELAY = DELAY - 1
-    start_frame.after(1000, add_label)
+def hide_label(self, event=None):
+		self.label.lower(self.frame)
+def refresh(self):
+    self.destroy()
+    self.__init__()
+
+def clear_frame(frame):
+	for widgets in frame.winfo_children():
+		widgets.pack_forget()
 
 
 # Ask which service
-service_num = int(input("Which Service(1-3): "))
-while service_num <= 0 | service_num >= 4:
-    print("Enter between 1 - 3.")
-    service_num = int(input("Which service(1-3): "))
+service_num = 1 # int(input("Which Service(1-3): "))
+# while service_num <= 0 | service_num >= 4:
+#     print("Enter between 1 - 3.")
+#     service_num = int(input("Which service(1-3): "))
 
 now = datetime.now()
 month_list = {1:"Jan ", 2:"Feb ", 3:"Mar ", 4:"Apr ", 5:"May ", 6:"Jun ",
@@ -98,16 +110,18 @@ for i in range(2, pSheet.max_row + 1):
 ROOT = Tk()
 ROOT.title("EPC Sunday Service")
 ROOT.tk_setPalette(background='white')
-ROOT.geometry('1920x800')
+ROOT.geometry('1680x800')
+frame = Frame(ROOT);
+frame.pack();
 
 wel_img1 = ImageTk.PhotoImage(Image.open("img/welcome1.png"))
 wel_img2 = ImageTk.PhotoImage(Image.open("img/welcome2.png"))
 wel_img3 = ImageTk.PhotoImage(Image.open("img/welcome3.png"))
 qr_img = ImageTk.PhotoImage(Image.open("img/qr_instruction.png"))
-confirmed_img = ImageTk.PhotoImage(Image.open("img/confirmed.png"))
-notOnTime_img = ImageTk.PhotoImage(Image.open("img/not_on_time.png"))
-notreg_img = ImageTk.PhotoImage(Image.open("img/not_registered.png"))
-redeemed_img = ImageTk.PhotoImage(Image.open("img/redeemed.png"))
+confirmed_img = ImageTk.PhotoImage(Image.open("img/confirmed.jpg"))
+notOnTime_img = ImageTk.PhotoImage(Image.open("img/not_on_time.jpg"))
+notreg_img = ImageTk.PhotoImage(Image.open("img/unregistered.jpg"))
+redeemed_img = ImageTk.PhotoImage(Image.open("img/redeemed.jpg"))
 
 if service_num == 1:
     header = Image.open("img/welcome1.png")
@@ -115,6 +129,7 @@ if service_num == 2:
     header = Image.open("img/welcome2.png")
 if service_num == 3:
     header = Image.open("img/welcome3.png")
+header = Image.open("img/welcome3.png")
 
 photo = ImageTk.PhotoImage(header)
 headerLabel = Label(image=photo)
@@ -122,80 +137,91 @@ headerLabel.image = photo
 headerLabel.place(x=64, y=52)
 
 # Body frame
-start_frame = Frame(ROOT, padx=0, pady=0, background='white', highlightbackground='red', highlightthickness=0)
-start_frame.pack()
-start_frame.place(x=550, y=221)
-qrLabel = Label(start_frame, image=qr_img, font="bold")
-qrLabel.pack()
-
-body_frame = Frame(ROOT, padx=0, pady=51,background='white', highlightbackground='red', highlightthickness=0)
+body_frame = Frame(ROOT,width=1000,height=600, padx=20, pady=20,bg='white')
 body_frame.pack()
 body_frame.place(x=550, y=221)
 
+qrLabel = Label(body_frame, image=qr_img)
+confirmedLabel = Label(body_frame, image=confirmed_img)
+notLabel = Label(body_frame, image=notOnTime_img)
+unregLabel = Label(body_frame, image=notreg_img)
+redeemedLabel = Label(body_frame, image=redeemed_img)
+
+nameText = Text(body_frame, width=32, height=1, font=("Arial", 19))
+descText = Text(body_frame, width=32, height=1, font=("Arial", 19))
+
 exit_loop = False
+qrLabel.pack()
 while exit_loop == False:
-    scan_num = input("Scan QR Code: ")
+	scan_num = input("Scan QR Code: ")
+	if scan_num == "q":
+		exit_loop = True
+	else:
+		if scan_num in attendee_list:
+			now = datetime.now()
+			name = attendee_list[scan_num][0]
+			email = attendee_list[scan_num][1]
+			phone = attendee_list[scan_num][2]
+			checkIn = attendee_list[scan_num][3]
 
-    body_frame.destroy()
-    if scan_num == "q":
-        exit_loop = True
-    else:
-        # GUI
-        body_frame = Frame(ROOT, padx=0, pady=51,background='white', highlightbackground='red', highlightthickness=0)
-        body_frame.pack()
-        body_frame.place(x=550, y=221)
+			## REDEEMED CODE ##
+			if scan_num in entered_person:
+				print("ERROR: This ticket is already redeemed")
+				print("       Ticket# :" + scan_num)
+				print("       Name    :" + name)
+				print("       Entered :" + entered_person[scan_num])
+				sys.stdout.write('\r\a')
+				sys.stdout.flush()
+				# GUI
+				clear_frame(body_frame)
+				nameText.delete("1.0", END)
+				descText.delete("1.0", END)
+				nameText.insert(tk.END, name)
+				descText.insert(tk.END,"Redeemed time: " + entered_person[scan_num])
+				redeemedLabel.pack()
+				nameText.pack()
+				descText.pack()
 
-        if scan_num in attendee_list:
-            now = datetime.now()
-            name = attendee_list[scan_num][0]
-            email = attendee_list[scan_num][1]
-            phone = attendee_list[scan_num][2]
-            checkIn = attendee_list[scan_num][3]
+			else:
+				## RESERVATION TIME NOT MATCHED ##
+				if checkIn != this_service:
+						print("Reservation time does not match.")
+						sys.stdout.write('\r\a')
+						sys.stdout.flush()
+						# GUI
+						Label(body_frame, image=notOnTime_img, font="bold", pady=20).pack(side=TOP)
+						Label(body_frame, text=name, font=("Arial", 19), pady=16).pack()
+						Label(body_frame, text="Reserved time: " + checkIn, font=("Arial", 19)).pack()
+						clear_frame(body_frame)
+						notLabel.pack()
+						nameText.delete("1.0", END)
+						descText.delete("1.0", END)
+						nameText.insert(tk.END, name)
+						descText.insert(tk.END, "Reserved time: " + checkIn)
+						nameText.pack()
+						descText.pack()
 
-            ## REDEEMED CODE ##
-            if scan_num in entered_person:
-                print("ERROR: This ticket is already redeemed")
-                print("       Ticket# :" + scan_num)
-                print("       Name    :" + name)
-                print("       Entered :" + entered_person[scan_num])
-                sys.stdout.write('\r\a')
-                sys.stdout.flush()
-                # GUI
-                Label(body_frame, image=redeemed_img, font="bold", pady=20).pack(side=TOP)
-                Label(body_frame, text=name, font=("Arial", 19), pady=16).pack()
-                Label(body_frame, text="Redeemed time: " + entered_person[scan_num], font=("Arial", 19)).pack()
-                Label(body_frame, text=" ", font='bold', pady=16).pack()
-
-            else:
-                ## RESERVATION TIME NOT MATCHED ##
-                if checkIn != this_service:
-                    print("Reservation time does not match.")
-                    sys.stdout.write('\r\a')
-                    sys.stdout.flush()
-                    # GUI
-                    Label(body_frame, image=notOnTime_img, font="bold", pady=20).pack(side=TOP)
-                    Label(body_frame, text=name, font=("Arial", 19), pady=16).pack()
-                    Label(body_frame, text="Reserved time: " + checkIn, font=("Arial", 19)).pack()
-                    Label(body_frame, text=" ", font='bold', pady=16).pack()
-
-                ## NEW SUCCESSFUL ENTRY PROCESSING ##
-                else:
-                    print(  name + " " + now.strftime("%H:%M:%S"))
-                    f.write(name + ", " + email + ", " + phone + ", " + now.strftime("%H:%M:%S") + "\n")
-                    entered_person[scan_num] = now.strftime("%H:%M:%S")
-                    # GUI
-                    Label(body_frame, image=confirmed_img, font="bold", pady=20).pack(side=TOP)
-                    Label(body_frame, text=name, font=("Arial", 19), pady=16).pack()
-                    Label(body_frame, text="Redeemed time: " + now.strftime("%H:%M:%S"), font=("Arial", 19)).pack()
-                    Label(body_frame, text=" ", font='bold', pady=16).pack()
-
-        ## CODE NOT EXIST ##
-        else:
-            print("Cannot find ticket #: " + scan_num)
-            sys.stdout.write('\r\a')
-            sys.stdout.flush()
-            # GUI
-            Label(body_frame, image=notreg_img, font="bold", pady=20).pack(side=TOP)
-            Label(body_frame, text=" ", font='bold', pady=20).pack()
-            Label(body_frame, text=" ", font='bold', pady=16).pack()
-            Label(body_frame, text=" ", font='bold', pady=16).pack()
+				## NEW SUCCESSFUL ENTRY PROCESSING ##
+				else:
+					print(  name + " " + now.strftime("%H:%M:%S"))
+					f.write(name + ", " + email + ", " + phone + ", " + now.strftime("%H:%M:%S") + "\n")
+					entered_person[scan_num] = now.strftime("%H:%M:%S")
+					# GUI
+					clear_frame(body_frame)
+					nameText.delete("1.0", END)
+					descText.delete("1.0", END)
+					nameText.insert(tk.END, name)
+					descText.insert(tk.END, "Entered at: " + now.strftime("%H:%M:%S"))
+					confirmedLabel.pack()
+					nameText.pack()
+					descText.pack()
+					
+		## CODE NOT EXIST ##
+		else:
+			print("Cannot find ticket #: " + scan_num)
+			sys.stdout.write('\r\a')
+			sys.stdout.flush()
+			# GUI
+			clear_frame(body_frame)
+			unregLabel.pack()
+	
