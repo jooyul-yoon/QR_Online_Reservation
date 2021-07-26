@@ -2,11 +2,9 @@
 
 Pre-registration, QR codes to welcome people back to Emmanuel Presbyterian Church
 
-## Getting Started
-
-People have to register before attending every service of EPC(Emmanuel Presbyterian Church)
-
 ### Prerequisites
+
+People have to register before attending every service of EPC(Emmanuel Presbyterian Church) from [EventBrite](www.eventbrite.com)
 
 What things you need to install the software and how to install them
 
@@ -18,30 +16,30 @@ pip install PIL
 
 ## Running the tests
 
-Explain how to run the automated tests for this system
+- ### Default / Instruction Screen
 
-### Break down into end to end tests
+<img src="screenshots/welcome.png" width="350">
 
-Explain what these tests test and why
+- ### In case QR code succesfully redeemed
 
-```
-Give an example
-```
+<img src="screenshots/confirmed.png" width="350">
 
-### And coding style tests
+- ### In case QR code redeemed does not exist
 
-Explain what these tests test and why
+<img src="screenshots/not_exist.png" width="350">
 
-```
-Give an example
-```
+- ### In case QR code has already been redeemed
+
+<img src="screenshots/redeemed.png" width="350">
+
+- ### In case registered service time does not match current service
+
+<img src="screenshots/not_registered.png" width="350">
+
+- ### As an output, Log file contains information of attendees including name, phone number, email address, and entered time
 
 ## Authors
 
-- **Jooyul Yoon** - _Initial work_ - [GitHub](https://github.com/jooyul-yoon)
+- **Jooyul Yoon** - _developed_ - [GitHub](https://github.com/jooyul-yoon)
 - **Dennis Lee** - _Initial work_
 - **Eileen Yoon** - _Designed_ [LinkedIn](https://www.linkedin.com/in/jooyoungeileenyoon/)
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
